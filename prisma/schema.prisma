@@ -28,7 +28,7 @@ model Trip {
   destino     String
   fechaInicio DateTime @map("fecha_inicio") @db.Date
   fechaFin    DateTime @map("fecha_fin") @db.Date
-  presupuesto Decimal  @db.Decimal(10, 2)
+  presupuesto Decimal  @db.Decimal(15, 2)
   createdAt   DateTime @default(now()) @map("created_at")
 
   user        User        @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
@@ -57,7 +57,7 @@ model Itinerary {
   hora          String?
   actividad     String
   ubicacion     String?
-  costoEstimado Decimal? @map("costo_estimado") @db.Decimal(10, 2)
+  costoEstimado Decimal? @map("costo_estimado") @db.Decimal(15, 2)
   notas         String?
   orden         Int      @default(0)
   createdAt     DateTime @default(now()) @map("created_at")
