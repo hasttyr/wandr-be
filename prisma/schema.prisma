@@ -1,6 +1,8 @@
 // prisma/schema.prisma
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // Render usa Linux — binary targets explícitos evitan errores de plataforma
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x", "linux-musl-arm64-openssl-3.0.x"]
 }
 
 datasource db {
@@ -39,9 +41,9 @@ model Trip {
 model Preference {
   id          String  @id @default(uuid())
   viajeId     String  @unique @map("viaje_id")
-  tipoTurismo String  @map("tipo_turismo") // cultural | aventura | gastronomia | playa | naturaleza
-  transporte  String  // vuelo | tren | auto | bus
-  alojamiento String  // hotel | hostal | airbnb | camping
+  tipoTurismo String  @map("tipo_turismo")
+  transporte  String
+  alojamiento String
 
   trip Trip @relation(fields: [viajeId], references: [id], onDelete: Cascade)
 
@@ -51,13 +53,13 @@ model Preference {
 model Itinerary {
   id            String   @id @default(uuid())
   viajeId       String   @map("viaje_id")
-  dia           Int      // número de día dentro del viaje (1, 2, 3...)
-  hora          String?  // "09:00"
+  dia           Int
+  hora          String?
   actividad     String
   ubicacion     String?
   costoEstimado Decimal? @map("costo_estimado") @db.Decimal(10, 2)
   notas         String?
-  orden         Int      @default(0) // orden dentro del día
+  orden         Int      @default(0)
   createdAt     DateTime @default(now()) @map("created_at")
 
   trip Trip @relation(fields: [viajeId], references: [id], onDelete: Cascade)

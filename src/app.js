@@ -11,11 +11,25 @@ import itineraryRoutes from './routes/itinerary.routes.js'
 
 const app = express()
 
+// ── Render usa un proxy inverso — confiar en él para rate limiting por IP ──
+app.set('trust proxy', 1)
+
 // ── Seguridad HTTP ──────────────────────────────────────────────────────────
 app.use(helmet())
 
+// ── CORS ────────────────────────────────────────────────────────────────────
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map(o => o.trim().replace(/\/$/, ''))
+  : ['http://localhost:5173']
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    // Permitir requests sin origin (mobile apps, curl, Postman)
+    if (!origin) return callback(null, true)
+    const clean = origin.replace(/\/$/, '')
+    if (allowedOrigins.includes(clean)) return callback(null, true)
+    callback(new Error(`CORS: origin no permitido — ${origin}`))
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -23,7 +37,7 @@ app.use(cors({
 
 // ── Rate limiting ───────────────────────────────────────────────────────────
 const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 min
+  windowMs: 15 * 60 * 1000,
   max: 200,
   standardHeaders: true,
   legacyHeaders: false,
@@ -32,13 +46,13 @@ const globalLimiter = rateLimit({
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10, // máx 10 intentos de login por IP cada 15 min
+  max: 10,
   message: { error: 'Demasiados intentos de autenticación. Intenta más tarde.' },
 })
 
 const aiLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hora
-  max: 20, // 20 generaciones por hora por IP (respeta el free tier de HF)
+  windowMs: 60 * 60 * 1000,
+  max: 20,
   message: { error: 'Límite de generación IA alcanzado. Intenta en una hora.' },
 })
 
@@ -66,6 +80,10 @@ app.use((_req, res) => {
 
 // ── Error handler global ─────────────────────────────────────────────────────
 app.use((err, _req, res, _next) => {
+  // Silenciar errores CORS en los logs (son normales en preflight)
+  if (err.message?.startsWith('CORS:')) {
+    return res.status(403).json({ error: err.message })
+  }
   console.error('[Error]', err)
   const status = err.status || 500
   const message = process.env.NODE_ENV === 'production'

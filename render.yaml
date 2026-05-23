@@ -1,0 +1,27 @@
+# render.yaml — Infraestructura como código para Render
+# Referencia: https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: wandr-be
+    runtime: node
+    region: oregon
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false          # Se rellena manualmente en el dashboard
+      - key: JWT_SECRET
+        generateValue: true  # Render genera un valor aleatorio seguro
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: HF_API_KEY
+        sync: false
+      - key: HF_MODEL
+        value: mistralai/Mistral-7B-Instruct-v0.3
+      - key: CORS_ORIGIN
+        sync: false          # Poner la URL de Vercel después del deploy del FE
+    healthCheckPath: /health
