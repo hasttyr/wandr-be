@@ -1,0 +1,67 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  nombre       String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  trips Trip[]
+
+  @@map("usuarios")
+}
+
+model Trip {
+  id          String   @id @default(uuid())
+  usuarioId   String   @map("usuario_id")
+  destino     String
+  fechaInicio DateTime @map("fecha_inicio") @db.Date
+  fechaFin    DateTime @map("fecha_fin") @db.Date
+  presupuesto Decimal  @db.Decimal(10, 2)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user        User        @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  preferences Preference?
+  itineraries Itinerary[]
+
+  @@map("viajes")
+}
+
+model Preference {
+  id          String  @id @default(uuid())
+  viajeId     String  @unique @map("viaje_id")
+  tipoTurismo String  @map("tipo_turismo") // cultural | aventura | gastronomia | playa | naturaleza
+  transporte  String  // vuelo | tren | auto | bus
+  alojamiento String  // hotel | hostal | airbnb | camping
+
+  trip Trip @relation(fields: [viajeId], references: [id], onDelete: Cascade)
+
+  @@map("preferencias")
+}
+
+model Itinerary {
+  id            String   @id @default(uuid())
+  viajeId       String   @map("viaje_id")
+  dia           Int      // número de día dentro del viaje (1, 2, 3...)
+  hora          String?  // "09:00"
+  actividad     String
+  ubicacion     String?
+  costoEstimado Decimal? @map("costo_estimado") @db.Decimal(10, 2)
+  notas         String?
+  orden         Int      @default(0) // orden dentro del día
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  trip Trip @relation(fields: [viajeId], references: [id], onDelete: Cascade)
+
+  @@index([viajeId, dia])
+  @@map("itinerarios")
+}
