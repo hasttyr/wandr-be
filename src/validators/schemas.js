@@ -18,7 +18,14 @@ export const createTripSchema = z.object({
   destino: z.string().min(2, 'El destino es requerido').max(200),
   fechaInicio: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato de fecha inválido (YYYY-MM-DD)'),
   fechaFin: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato de fecha inválido (YYYY-MM-DD)'),
-  presupuesto: z.number().positive('El presupuesto debe ser positivo'),
+  // Acepta número o string numérico (el form HTML envía strings)
+  // Máximo 999,999,999,999 COP (~1 billón) — suficiente para cualquier viaje
+  presupuesto: z.preprocess(
+    (val) => (typeof val === 'string' ? parseFloat(val.replace(/,/g, '')) : val),
+    z.number()
+      .positive('El presupuesto debe ser positivo')
+      .max(999_999_999_999, 'El presupuesto no puede superar 999,999,999,999')
+  ),
   tipoTurismo: z.enum(['cultural', 'aventura', 'gastronomia', 'playa', 'naturaleza'], {
     errorMap: () => ({ message: 'Tipo de turismo inválido' }),
   }),
